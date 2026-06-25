@@ -1,0 +1,117 @@
+### Announcement Board API — REST Client test file
+### Install the "REST Client" VS Code extension, then click "Send Request" above each block.
+
+@baseUrl = http://localhost:3000
+
+# ─────────────────────────────────────────────────────────────
+# GET /announcements — no parameters (returns first page)
+# ─────────────────────────────────────────────────────────────
+GET {{baseUrl}}/announcements
+Accept: application/json
+
+###
+
+# ─────────────────────────────────────────────────────────────
+# GET /announcements — search by title
+# ─────────────────────────────────────────────────────────────
+GET {{baseUrl}}/announcements?search=macbook
+Accept: application/json
+
+###
+
+# ─────────────────────────────────────────────────────────────
+# GET /announcements — sort oldest first, page 2
+# ─────────────────────────────────────────────────────────────
+GET {{baseUrl}}/announcements?sort=oldest&page=2
+Accept: application/json
+
+###
+
+# ─────────────────────────────────────────────────────────────
+# GET /announcements/:id — existing record (id=1)
+# ─────────────────────────────────────────────────────────────
+GET {{baseUrl}}/announcements/1
+Accept: application/json
+
+###
+
+# ─────────────────────────────────────────────────────────────
+# GET /announcements/:id — non-existent id → 404
+# ─────────────────────────────────────────────────────────────
+GET {{baseUrl}}/announcements/99999
+Accept: application/json
+
+###
+
+# ─────────────────────────────────────────────────────────────
+# POST /announcements — valid data → 201
+# ─────────────────────────────────────────────────────────────
+POST {{baseUrl}}/announcements
+Content-Type: application/json
+
+{
+  "title": "Selling Sony WH-1000XM5 headphones",
+  "description": "Barely used noise-cancelling headphones, purchased 6 months ago. Perfect condition, original box included.",
+  "price": 8500,
+  "category": "sale",
+  "contactInfo": "telegram: @sony_seller"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+# POST /announcements — invalid data → 400 (title too short, price negative)
+# ─────────────────────────────────────────────────────────────
+POST {{baseUrl}}/announcements
+Content-Type: application/json
+
+{
+  "title": "Hi",
+  "description": "short",
+  "price": -100,
+  "category": "unknown",
+  "contactInfo": "x"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+# PATCH /announcements/:id — partial update (price and contactInfo only)
+# ─────────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/announcements/1
+Content-Type: application/json
+
+{
+  "price": 68000,
+  "contactInfo": "updated@email.com"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+# PATCH /announcements/:id — non-existent id → 404
+# ─────────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/announcements/99999
+Content-Type: application/json
+
+{
+  "price": 100
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────
+# DELETE /announcements/:id — delete existing record → 204
+# ─────────────────────────────────────────────────────────────
+DELETE {{baseUrl}}/announcements/12
+Accept: application/json
+
+###
+
+# ─────────────────────────────────────────────────────────────
+# DELETE /announcements/:id — non-existent id → 404
+# ─────────────────────────────────────────────────────────────
+DELETE {{baseUrl}}/announcements/99999
+Accept: application/json
+
+###
