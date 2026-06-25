@@ -11,7 +11,8 @@ import {
   idParamValidator,
   createAnnouncementValidator,
   updateAnnouncementValidator,
-} from '../validators/announcements.validators.js'
+} from '../validators/announcements.validator.js'
+import { authenticate } from '../middleware/auth.middleware.js'
 
 const router = Router()
 
@@ -19,36 +20,31 @@ const router = Router()
  * @swagger
  * tags:
  *   name: Announcements
- *   description: Announcement board API
+ *   description: Announcement board — public reads, authenticated writes
  */
 
 /**
  * @swagger
  * /announcements:
  *   get:
- *     summary: Get list of announcements
+ *     summary: Get paginated list of announcements
  *     tags: [Announcements]
  *     parameters:
  *       - in: query
  *         name: search
- *         schema:
- *           type: string
- *         description: Search by title (case-insensitive substring match)
+ *         schema: { type: string }
+ *         description: Case-insensitive title substring search
  *       - in: query
  *         name: sort
- *         schema:
- *           type: string
- *           enum: [newest, oldest]
+ *         schema: { type: string, enum: [newest, oldest] }
  *         description: Sort order (default newest)
  *       - in: query
  *         name: page
- *         schema:
- *           type: integer
- *           minimum: 1
- *         description: Page number (default 1, 10 items per page)
+ *         schema: { type: integer, minimum: 1 }
+ *         description: Page number (10 items per page)
  *     responses:
  *       200:
- *         description: Paginated list of announcements
+ *         description: Paginated list
  *         content:
  *           application/json:
  *             schema:
@@ -60,8 +56,6 @@ const router = Router()
  *                     $ref: '#/components/schemas/Announcement'
  *                 pagination:
  *                   $ref: '#/components/schemas/Pagination'
- *       400:
- *         description: Invalid query parameters
  */
 router.get('/', getAnnouncementsValidator, getAnnouncements)
 
@@ -75,9 +69,7 @@ router.get('/', getAnnouncementsValidator, getAnnouncements)
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: integer
- *         description: Announcement ID
+ *         schema: { type: integer }
  *     responses:
  *       200:
  *         description: Announcement object
@@ -86,7 +78,7 @@ router.get('/', getAnnouncementsValidator, getAnnouncements)
  *             schema:
  *               $ref: '#/components/schemas/Announcement'
  *       404:
- *         description: Announcement not found
+ *         description: Not found
  */
 router.get('/:id', idParamValidator, getAnnouncementById)
 
@@ -96,6 +88,8 @@ router.get('/:id', idParamValidator, getAnnouncementById)
  *   post:
  *     summary: Create a new announcement
  *     tags: [Announcements]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -104,29 +98,31 @@ router.get('/:id', idParamValidator, getAnnouncementById)
  *             $ref: '#/components/schemas/AnnouncementInput'
  *     responses:
  *       201:
- *         description: Created announcement
+ *         description: Created
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Announcement'
  *       400:
  *         description: Validation error
+ *       401:
+ *         description: Not authenticated
  */
-router.post('/', createAnnouncementValidator, createAnnouncement)
+router.post('/', authenticate, createAnnouncementValidator, createAnnouncement)
 
 /**
  * @swagger
  * /announcements/{id}:
  *   patch:
- *     summary: Partially update an announcement
+ *     summary: Partially update own announcement
  *     tags: [Announcements]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: integer
- *         description: Announcement ID
+ *         schema: { type: integer }
  *     requestBody:
  *       required: true
  *       content:
@@ -141,31 +137,39 @@ router.post('/', createAnnouncementValidator, createAnnouncement)
  *             schema:
  *               $ref: '#/components/schemas/Announcement'
  *       400:
- *         description: Validation error (empty body or invalid fields)
+ *         description: Validation error
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Access denied — not your announcement
  *       404:
- *         description: Announcement not found
+ *         description: Not found
  */
-router.patch('/:id', updateAnnouncementValidator, updateAnnouncement)
+router.patch('/:id', authenticate, updateAnnouncementValidator, updateAnnouncement)
 
 /**
  * @swagger
  * /announcements/{id}:
  *   delete:
- *     summary: Delete an announcement
+ *     summary: Delete own announcement
  *     tags: [Announcements]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: integer
- *         description: Announcement ID
+ *         schema: { type: integer }
  *     responses:
  *       204:
- *         description: Successfully deleted (no content)
+ *         description: Deleted (no content)
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Access denied — not your announcement
  *       404:
- *         description: Announcement not found
+ *         description: Not found
  */
-router.delete('/:id', idParamValidator, deleteAnnouncement)
+router.delete('/:id', authenticate, idParamValidator, deleteAnnouncement)
 
 export default router

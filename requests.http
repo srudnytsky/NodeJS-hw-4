@@ -1,85 +1,218 @@
-### Announcement Board API — REST Client test file
-### Install the "REST Client" VS Code extension, then click "Send Request" above each block.
+### Announcement Board API — hw4 Auth tests
+### Install "REST Client" VS Code extension, click "Send Request" above each block.
+### Workflow: register → copy accessToken → paste below → test protected routes
 
 @baseUrl = http://localhost:3000
 
-# ─────────────────────────────────────────────────────────────
-# GET /announcements — no parameters (returns first page)
-# ─────────────────────────────────────────────────────────────
+# ── store tokens after register/login ────────────────────────────────────────
+# After running register or login, copy the returned accessToken value
+# and paste it into the @token variable below.
+@token = PASTE_ACCESS_TOKEN_HERE
+@token2 = PASTE_SECOND_USER_TOKEN_HERE
+
+###
+# ════════════════════════════════════════
+# AUTH
+# ════════════════════════════════════════
+
+# ── Register user 1 ──────────────────────────────────────────────────────────
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "secret123",
+  "name": "Іван"
+}
+
+###
+
+# ── Register user 2 (to test ownership) ──────────────────────────────────────
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "olena_kovalenko",
+  "password": "secret456",
+  "name": "Олена"
+}
+
+###
+
+# ── Register — duplicate username → 409 ──────────────────────────────────────
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "anotherpass",
+  "name": "Дублікат"
+}
+
+###
+
+# ── Register — validation error (password too short) → 400 ───────────────────
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "password": "123",
+  "name": "X"
+}
+
+###
+
+# ── Login — valid credentials → 200 ──────────────────────────────────────────
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "secret123"
+}
+
+###
+
+# ── Login — wrong password → 401 ─────────────────────────────────────────────
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "wrongpassword"
+}
+
+###
+
+# ── Login — unknown username → 401 ───────────────────────────────────────────
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "nobody",
+  "password": "doesntmatter"
+}
+
+###
+
+# ── Refresh token (via body) ──────────────────────────────────────────────────
+# Replace PASTE_REFRESH_TOKEN_HERE with refreshToken from register/login
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "PASTE_REFRESH_TOKEN_HERE"
+}
+
+###
+
+# ── Refresh — invalid token → 401 ────────────────────────────────────────────
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "this.is.not.valid"
+}
+
+###
+
+# ── Get current user profile (protected) ─────────────────────────────────────
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+###
+
+# ── Get profile — no token → 401 ─────────────────────────────────────────────
+GET {{baseUrl}}/auth/me
+
+###
+
+# ── Logout (protected) ───────────────────────────────────────────────────────
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+###
+
+# ════════════════════════════════════════
+# ANNOUNCEMENTS — public
+# ════════════════════════════════════════
+
+# ── Get all (no auth needed) ─────────────────────────────────────────────────
 GET {{baseUrl}}/announcements
-Accept: application/json
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-# GET /announcements — search by title
-# ─────────────────────────────────────────────────────────────
-GET {{baseUrl}}/announcements?search=macbook
-Accept: application/json
+# ── Search by title ───────────────────────────────────────────────────────────
+GET {{baseUrl}}/announcements?search=ноутбук
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-# GET /announcements — sort oldest first, page 2
-# ─────────────────────────────────────────────────────────────
+# ── Sort oldest + page 2 ─────────────────────────────────────────────────────
 GET {{baseUrl}}/announcements?sort=oldest&page=2
-Accept: application/json
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-# GET /announcements/:id — existing record (id=1)
-# ─────────────────────────────────────────────────────────────
+# ── Get single announcement ───────────────────────────────────────────────────
 GET {{baseUrl}}/announcements/1
-Accept: application/json
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-# GET /announcements/:id — non-existent id → 404
-# ─────────────────────────────────────────────────────────────
+# ── Get non-existent → 404 ───────────────────────────────────────────────────
 GET {{baseUrl}}/announcements/99999
-Accept: application/json
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-# POST /announcements — valid data → 201
-# ─────────────────────────────────────────────────────────────
+# ════════════════════════════════════════
+# ANNOUNCEMENTS — protected writes
+# ════════════════════════════════════════
+
+# ── Create — authenticated → 201 ─────────────────────────────────────────────
 POST {{baseUrl}}/announcements
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-  "title": "Selling Sony WH-1000XM5 headphones",
-  "description": "Barely used noise-cancelling headphones, purchased 6 months ago. Perfect condition, original box included.",
-  "price": 8500,
+  "title": "Продам MacBook Pro M3",
+  "description": "Відмінний стан, 16 ГБ RAM, SSD 512 ГБ, повна комплектація",
+  "price": 72000,
   "category": "sale",
-  "contactInfo": "telegram: @sony_seller"
+  "contactInfo": "telegram: @macbook_seller"
 }
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-# POST /announcements — invalid data → 400 (title too short, price negative)
-# ─────────────────────────────────────────────────────────────
+# ── Create — no token → 401 ──────────────────────────────────────────────────
 POST {{baseUrl}}/announcements
 Content-Type: application/json
 
 {
-  "title": "Hi",
-  "description": "short",
-  "price": -100,
-  "category": "unknown",
-  "contactInfo": "x"
+  "title": "Спроба без токена",
+  "description": "Це має повернути 401 бо немає авторизації",
+  "price": 100,
+  "category": "other",
+  "contactInfo": "test@test.com"
 }
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-# PATCH /announcements/:id — partial update (price and contactInfo only)
-# ─────────────────────────────────────────────────────────────
+# ── Create — validation error → 400 ──────────────────────────────────────────
+POST {{baseUrl}}/announcements
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Ні",
+  "price": -50
+}
+
+###
+
+# ── Update own announcement → 200 ────────────────────────────────────────────
+# (use the id returned from the Create request above)
 PATCH {{baseUrl}}/announcements/1
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "price": 68000,
@@ -88,11 +221,32 @@ Content-Type: application/json
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-# PATCH /announcements/:id — non-existent id → 404
-# ─────────────────────────────────────────────────────────────
+# ── Update — no token → 401 ──────────────────────────────────────────────────
+PATCH {{baseUrl}}/announcements/1
+Content-Type: application/json
+
+{
+  "price": 50000
+}
+
+###
+
+# ── Update — someone else's announcement → 403 ───────────────────────────────
+# Log in as user 2 and paste their token into @token2, then:
+PATCH {{baseUrl}}/announcements/1
+Content-Type: application/json
+Authorization: Bearer {{token2}}
+
+{
+  "price": 1
+}
+
+###
+
+# ── Update — non-existent → 404 ──────────────────────────────────────────────
 PATCH {{baseUrl}}/announcements/99999
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "price": 100
@@ -100,18 +254,25 @@ Content-Type: application/json
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-# DELETE /announcements/:id — delete existing record → 204
-# ─────────────────────────────────────────────────────────────
-DELETE {{baseUrl}}/announcements/12
-Accept: application/json
+# ── Delete own announcement → 204 ────────────────────────────────────────────
+DELETE {{baseUrl}}/announcements/1
+Authorization: Bearer {{token}}
 
 ###
 
-# ─────────────────────────────────────────────────────────────
-# DELETE /announcements/:id — non-existent id → 404
-# ─────────────────────────────────────────────────────────────
+# ── Delete — no token → 401 ──────────────────────────────────────────────────
+DELETE {{baseUrl}}/announcements/1
+
+###
+
+# ── Delete — someone else's announcement → 403 ───────────────────────────────
+DELETE {{baseUrl}}/announcements/2
+Authorization: Bearer {{token2}}
+
+###
+
+# ── Delete — non-existent → 404 ──────────────────────────────────────────────
 DELETE {{baseUrl}}/announcements/99999
-Accept: application/json
+Authorization: Bearer {{token}}
 
 ###

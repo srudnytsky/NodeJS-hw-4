@@ -1,6 +1,5 @@
 import { celebrate, Joi, Segments } from 'celebrate'
 
-//  GET /announcements 
 export const getAnnouncementsValidator = celebrate({
   [Segments.QUERY]: Joi.object({
     search: Joi.string().optional(),
@@ -9,14 +8,12 @@ export const getAnnouncementsValidator = celebrate({
   }),
 })
 
-// GET|PATCH|DELETE /announcements/:id 
 export const idParamValidator = celebrate({
   [Segments.PARAMS]: Joi.object({
     id: Joi.number().integer().required(),
   }),
 })
 
-// POST /announcements 
 export const createAnnouncementValidator = celebrate({
   [Segments.BODY]: Joi.object({
     title:       Joi.string().min(5).max(100).required(),
@@ -27,7 +24,6 @@ export const createAnnouncementValidator = celebrate({
   }),
 })
 
-//  PATCH /announcements/:id
 export const updateAnnouncementValidator = celebrate({
   [Segments.PARAMS]: Joi.object({
     id: Joi.number().integer().required(),
@@ -38,5 +34,5 @@ export const updateAnnouncementValidator = celebrate({
     price:       Joi.number().greater(0).optional(),
     category:    Joi.string().valid('sale', 'service', 'job', 'other').optional(),
     contactInfo: Joi.string().min(5).optional(),
-  }).min(1),  // at least one field required
+  }).min(1),
 })
